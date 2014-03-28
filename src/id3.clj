@@ -124,7 +124,7 @@ Options:
 	(convert-tag (or format :simple)
 		(b/decode id3 istream)))
 
-(defn mp3-file
+(defn read-mp3
 "Reads an MP3 file from `src` (anything accepted by `clojure.java.io/input-stream`).
 Returns a map with these keys:
   :tag   the parsed ID3 tag
@@ -136,10 +136,10 @@ Options as in `read-tag`."
 		:data in}))
 
 (defmacro with-mp3
-"Evaluates `body` with `sym` bound to the mp3-file `src`, then closes sym's input stream.
+"Evaluates `body` with `sym` bound to the mp3 `src`, then closes sym's input stream.
 Options as in `read-tag`."
 	[[sym src & opts] & body]
-	`(let [~sym (mp3-file ~src ~@opts)]
+	`(let [~sym (read-mp3 ~src ~@opts)]
 		(try ~@body
 			(finally (.close (:data ~sym))))))
 
@@ -157,7 +157,7 @@ Options:
 			(add-padding padding)))) ; add padding last, since other options (like encoding) can affect the tag size
 
 (defn write-mp3
-"Writes an mp3-file to `dest` (anything accepted by `clojure.java.io/output-stream`).
+"Writes an mp3 to `dest` (anything accepted by `clojure.java.io/output-stream`).
 Options as in `write-tag`."
 	[dest {:keys [tag data]} & opts]
 	(letfn [(f [out] (apply write-tag out tag opts) (io/copy data out))]
@@ -167,7 +167,7 @@ Options as in `write-tag`."
 				(f out)))))
 
 (defn overwrite-tag
-"Overwrites the ID3 tag of the existing MP3 at `path`. Will avoid rewriting the file's MPEG data if possible.
+"Overwrites the ID3 tag of the MP3 file at `path`. Will avoid rewriting the file's MPEG data if possible.
 Options as in `write-tag`, but :padding may be ignored."
 	[path tag & {:keys [version encoding padding]}]
 	(let [

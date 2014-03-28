@@ -30,7 +30,7 @@ Or to overwrite an existing file's tags:
 
 ## API
 
-When using this API, keep in mind the distinction between a "tag" (just the ID3 metadata; see `read-tag`) and an "mp3" (both the metadata and the audio data; see `mp3-file`).
+When using this API, keep in mind the distinction between a "tag" (just the ID3 metadata; see `read-tag`) and an "mp3" (both the metadata and the audio data; see `read-mp3`).
 
 ### read-tag
 ```clojure
@@ -53,9 +53,9 @@ Reads an ID3v2 tag from `istream`. The only option is `:format`, which determine
  :size 1059, :flags #{}, :version {:minor 0, :major 4}, :magic-number "ID3"}
 ```
 
-### mp3-file
+### read-mp3
 ```clojure
-(mp3-file src & opts)
+(read-mp3 src & opts)
 ```
 Parses the MP3 file at `src` (anything accepted by `clojure.java.io/input-stream`). Returns a map with these keys:
 - `:tag` the parsed ID3 tag
@@ -67,7 +67,7 @@ Options as in `read-tag`.
 ```clojure
 (with-mp3 [sym src & opts] & body)
 ```
-Convenience macro that evaluates `body` with `sym` bound to the mp3 at `src`, then closes the mp3's input stream. Options as in `mp3-file`.
+Convenience macro that evaluates `body` with `sym` bound to the mp3 at `src`, then closes the mp3's input stream. Options as in `read-mp3`.
 
 ### write-tag
 ```clojure
