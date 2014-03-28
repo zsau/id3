@@ -4,9 +4,9 @@
 		[clojure.test :refer :all]
 		[id3 :refer :all]))
 
-(defn write-id3-to-bytes [tag & opts]
+(defn write-tag-to-bytes [tag & opts]
 	(let [buf (ByteArrayOutputStream.)]
-		(apply write-id3 buf tag opts)
+		(apply write-tag buf tag opts)
 		(.toByteArray buf)))
 
 (deftest test-read
@@ -18,5 +18,5 @@
 (deftest test-round-trip
 	(let [t {:artist "Nobody", :title "Nothing"}]
 		(testing "Round-tripping tags"
-			(is (apply = t (map #(read-id3 (ByteArrayInputStream. (apply write-id3-to-bytes t %)))
+			(is (apply = t (map #(read-tag (ByteArrayInputStream. (apply write-tag-to-bytes t %)))
 				[[:version 4] [:version 3] [:encoding "ISO-8859-1"] [:encoding "UTF-16BE"] [:padding 0]]))))))

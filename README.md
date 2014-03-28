@@ -23,18 +23,18 @@ To write a new MP3 file with modified tags:
 
 Or to overwrite an existing file's tags:
 ```clojure
-(overwrite-id3 "foo.mp3"
+(overwrite-tag "foo.mp3"
   (with-mp3 [mp3 "foo.mp3"]
     (assoc (:tag mp3) :title "Thriller")))
 ```
 
 ## API
 
-When using this API, keep in mind the distinction between a "tag" (just the ID3 metadata; see `read-id3`) and an "mp3" (both the metadata and the audio data; see `mp3-file`).
+When using this API, keep in mind the distinction between a "tag" (just the ID3 metadata; see `read-tag`) and an "mp3" (both the metadata and the audio data; see `mp3-file`).
 
-### read-id3
+### read-tag
 ```clojure
-(read-id3 istream & opts)
+(read-tag istream & opts)
 ```
 Reads an ID3v2 tag from `istream`. The only option is `:format`, which determines the format into which the tag will be parsed. Values:
 - `:simple` _(default)_ A basic format that supports only common ID3 frames, and only one value per text frame. For a list of supported frames and their keys, see the output of `(frame-keywords N)`, where `N` is 3 (for ID3v2.3) or 4 (for ID3v2.4).
@@ -61,7 +61,7 @@ Parses the MP3 file at `src` (anything accepted by `clojure.java.io/input-stream
 - `:tag` the parsed ID3 tag
 - `:data` an *open input stream* positioned after the ID3 tag (i.e. at the start of the MPEG frames). You need to close this stream when you're done with it, but see `with-mp3`.
 
-Options as in `read-id3`.
+Options as in `read-tag`.
 
 ### with-mp3
 ```clojure
@@ -69,9 +69,9 @@ Options as in `read-id3`.
 ```
 Convenience macro that evaluates `body` with `sym` bound to the mp3 at `src`, then closes the mp3's input stream. Options as in `mp3-file`.
 
-### write-id3
+### write-tag
 ```clojure
-(write-id3 ostream tag & opts)
+(write-tag ostream tag & opts)
 ```
 Writes an ID3v2 tag to `ostream`. Writes only the tag, not any audio data. Options:
 - `:version` ID3v2.x tag version to write (3 or 4, default 4)
@@ -82,13 +82,13 @@ Writes an ID3v2 tag to `ostream`. Writes only the tag, not any audio data. Optio
 ```clojure
 (write-mp3 dest tag & opts)
 ```
-Writes an mp3 (tag and audio data) to `dest` (anything accepted by `clojure.java.io/output-stream`). Options as in `write-id3`.
+Writes an mp3 (tag and audio data) to `dest` (anything accepted by `clojure.java.io/output-stream`). Options as in `write-tag`.
 
-### overwrite-id3
+### overwrite-tag
 ```clojure
-(overwrite-id3 path tag & opts)
+(overwrite-tag path tag & opts)
 ```
-Overwrites the ID3 tag of the existing MP3 file at `path`. Will avoid rewriting the file's audio data if possible. Options as in `write-id3`, but `:padding` may be ignored.
+Overwrites the ID3 tag of the existing MP3 file at `path`. Will avoid rewriting the file's audio data if possible. Options as in `write-tag`, but `:padding` may be ignored.
 
 ## Caveats
 

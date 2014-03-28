@@ -116,7 +116,7 @@
 
 ; public API
 
-(defn read-id3
+(defn read-tag
 "Reads an ID3v2 tag from `istream`.
 Options:
   :format  format in which to parse tag (:full, :normal or :simple, default :simple)"
@@ -129,21 +129,21 @@ Options:
 Returns a map with these keys:
   :tag   the parsed ID3 tag
   :data  an open input stream positioned after the ID3 tag (i.e. at the start of the MPEG frames)
-Options as in `read-id3`."
+Options as in `read-tag`."
 	[src & opts]
 	(let [in (io/input-stream src)] {
-		:tag (apply read-id3 in opts)
+		:tag (apply read-tag in opts)
 		:data in}))
 
 (defmacro with-mp3
 "Evaluates `body` with `sym` bound to the mp3-file `src`, then closes sym's input stream.
-Options as in `read-id3`."
+Options as in `read-tag`."
 	[[sym src & opts] & body]
 	`(let [~sym (mp3-file ~src ~@opts)]
 		(try ~@body
 			(finally (.close (:data ~sym))))))
 
-(defn write-id3
+(defn write-tag
 "Writes an ID3v2 tag to `ostream`.
 Options:
   :version   ID3v2.x tag version to write (3 or 4, default 4)
@@ -158,17 +158,17 @@ Options:
 
 (defn write-mp3
 "Writes an mp3-file to `dest` (anything accepted by `clojure.java.io/output-stream`).
-Options as in `write-id3`."
+Options as in `write-tag`."
 	[dest {:keys [tag data]} & opts]
-	(letfn [(f [out] (apply write-id3 out tag opts) (io/copy data out))]
+	(letfn [(f [out] (apply write-tag out tag opts) (io/copy data out))]
 		(if (instance? java.io.OutputStream dest)
 			(f dest)
 			(with-open [out (io/output-stream dest)]
 				(f out)))))
 
-(defn overwrite-id3
+(defn overwrite-tag
 "Overwrites the ID3 tag of the existing MP3 at `path`. Will avoid rewriting the file's MPEG data if possible.
-Options as in `write-id3`, but :padding may be ignored."
+Options as in `write-tag`, but :padding may be ignored."
 	[path tag & {:keys [version encoding padding]}]
 	(let [
 			tag (set-encoding encoding (deconvert-tag version tag))
@@ -179,12 +179,12 @@ Options as in `write-id3`, but :padding may be ignored."
 			; no (must rewrite whole file)
 			(let [tmp-path (format ".%s.tmp" path)]
 				(with-open [in (io/input-stream path), out (io/output-stream tmp-path)]
-					(write-id3 out tag :padding padding)
+					(write-tag out tag :padding padding)
 					(.skip in (+ 10 old-size))
 					(io/copy in out))
 				(.renameTo (java.io.File. tmp-path) (java.io.File. path)))
 			; yes (can overwrite just the tags)
 			(let [byte-stream (java.io.ByteArrayOutputStream. (+ 10 size))]
-				(write-id3 byte-stream tag :padding padding-left)
+				(write-tag byte-stream tag :padding padding-left)
 				(with-open [out (java.io.RandomAccessFile. path "rw")]
 					(.write out (.toByteArray byte-stream)))))))
