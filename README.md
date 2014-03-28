@@ -8,6 +8,12 @@ _Coming soon..._
 
 ## Usage
 
+To parse the ID3 tag of an MP3:
+```clojure
+(with-mp3 [mp3 "foo.mp3"] (:tag mp3))
+; {:artist "Michael Jackson" :title "Smooth Criminal"}
+```
+
 To write a new MP3 file with modified tags:
 ```clojure
 (with-mp3 [mp3 "foo.mp3"]
