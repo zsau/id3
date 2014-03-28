@@ -36,19 +36,21 @@ When using this API, keep in mind the distinction between a "tag" (just the ID3 
 ```clojure
 (read-id3 istream & opts)
 ```
-Reads an ID3v2 tag from `istream`. Options:
-- `:format` format in which to parse the ID3 tag. Values:
-  - `:simple` _(default)_ A basic format that supports only common ID3 frames, and only one value per text frame. For a list of supported frames and their keys, see the output of `(frame-keywords N)`, where `N` is 3 (for ID3v2.3) or 4 (for ID3v2.4).
+Reads an ID3v2 tag from `istream`. The only option is `:format`, which determines the format into which the tag will be parsed. Values:
+- `:simple` _(default)_ A basic format that supports only common ID3 frames, and only one value per text frame. For a list of supported frames and their keys, see the output of `(frame-keywords N)`, where `N` is 3 (for ID3v2.3) or 4 (for ID3v2.4).
 ```clojure
 {:artist "Billy Joel", :title "Piano Man"}
 ```
-  - `:normal` A more comprehensive format that should support all common cases. Note that values for text frames are always vectors, because ID3v2.4 supports multiple values for all text frames.
+- `:normal` A more comprehensive format that should support all common cases. Note that values for text frames are always vectors, because ID3v2.4 supports multiple values for all text frames.
 ```clojure
 {"TPE1" ["Billy Joel"], "TIT2" ["Piano Man"]}
 ```
-  - `:full` Everything but the kitchen sink. This is way more info than you probably want or need, but it tells you nearly everything about the ID3 tag in gory detail.
+- `:full` Everything but the kitchen sink. This is way more info than you probably want or need, but it tells you nearly everything about the ID3 tag in gory detail.
 ```clojure
-{:frames ({:encoding "UTF-8", :content ["Billy Joel"], :size 11, :id "TPE1", :flags #{}} {:encoding "UTF-8", :content ["Piano Man"], :size 10, :id "TIT2", :flags #{}}), :size 1059, :flags #{}, :version {:minor 0, :major 4}, :magic-number "ID3"}
+{:frames (
+  {:encoding "UTF-8", :content ["Billy Joel"], :size 11, :id "TPE1", :flags #{}}
+  {:encoding "UTF-8", :content ["Piano Man"], :size 10, :id "TIT2", :flags #{}}),
+ :size 1059, :flags #{}, :version {:minor 0, :major 4}, :magic-number "ID3"}
 ```
 
 ### mp3-file
