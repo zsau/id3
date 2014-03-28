@@ -27,7 +27,7 @@ Or to overwrite an existing file's tags:
 When using this API, keep in mind the distinction between a "tag" (just the ID3 metadata; see `read-id3`) and an "mp3" (both the metadata and the audio data; see `mp3-file`).
 
 ### read-id3
-```
+```clojure
 (read-id3 istream & opts)
 ```
 Reads an ID3v2 tag from `istream`. Options:
