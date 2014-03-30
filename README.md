@@ -41,16 +41,17 @@ Reads an ID3v2 tag from `istream`. The only option is `:format`, which determine
 ```clojure
 {:artist "Billy Joel", :title "Piano Man"}
 ```
-- `:normal` A more comprehensive format that should support all common cases. Note that values for text frames are always vectors, because ID3v2.4 supports multiple values for all text frames.
+- `:normal` A more comprehensive format that should support all common cases. Note that values for text frames are sequential collections, because ID3v2.4 supports multiple values for all text frames.
 ```clojure
-{"TPE1" ["Billy Joel"], "TIT2" ["Piano Man"]}
+{"TPE1" ["Billy Joel"], "TIT2" ["Piano Man"], "APIC" ({:content #<byte[] [B@6a331017>, :mime-type "image/png", :picture-type 3})}
 ```
 - `:full` Everything but the kitchen sink. This is way more info than you probably want or need, but it tells you nearly everything about the ID3 tag in gory detail.
 ```clojure
-{:frames (
-  {:encoding "UTF-8", :content ["Billy Joel"], :size 11, :id "TPE1", :flags #{}}
-  {:encoding "UTF-8", :content ["Piano Man"], :size 10, :id "TIT2", :flags #{}}),
- :size 1059, :flags #{}, :version {:minor 0, :major 4}, :magic-number "ID3"}
+{:size 2301322, :flags #{}, :version {:minor 0, :major 4}, :magic-number "ID3",
+ :frames (
+   {:encoding "ISO-8859-1", :content ["Billy Joel"], :size 11, :id "TPE1", :flags #{}}
+   {:encoding "ISO-8859-1", :content ["Piano Man"], :size 10, :id "TIT2", :flags #{}}
+   {:id "APIC", :size 696989, :flags #{}, :content #<byte[] [B@c720a30>, :description "cover", :picture-type 3, :mime-type "image/png"})}
 ```
 
 ### read-mp3
