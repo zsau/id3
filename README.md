@@ -75,7 +75,7 @@ Convenience macro that evaluates `body` with `sym` bound to the mp3 at `src`, th
 ```
 Writes an ID3v2 tag to `ostream`. Writes only the tag, not any audio data. Options:
 - `:version` ID3v2.x tag version to write (3 or 4, default 4)
-- `:encoding` character encoding to use for text frames, etc. ID3v2.3 supports ISO-8859-1 and UTF-16; ID3v2.4 also supports UTF-16BE and UTF-8.
+- `:encoding` character encoding to use for text frames, etc. ID3v2.3 supports ISO-8859-1 and UTF-16; ID3v2.4 supports those plus UTF-16BE and UTF-8.
 - `:padding` bytes of padding to write (default 1024)
 
 ### write-mp3
