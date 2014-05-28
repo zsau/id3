@@ -147,7 +147,7 @@ Options as in `read-tag`."
 "Writes an ID3v2 tag to `ostream`.
 Options:
   :version   ID3v2.x tag version to write (3 or 4, default 4)
-  :encoding  character encoding to use for text frames, etc.
+  :encoding  character encoding to use for text frames, etc. (default UTF-16 for v2.3, UTF-8 for v2.4)
   :padding   bytes of padding to write (default 1024)"
 	[ostream tag & {:keys [version encoding padding]}]
 	(b/encode id3 ostream
