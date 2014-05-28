@@ -4,7 +4,10 @@ A simple ID3v2 parser. Supports most common features of [ID3v2.3](http://id3.org
 
 ## Artifact
 
-_Coming soon..._
+Leiningen dependency:
+```clojure
+[zsau/id3 "0.1.0"]
+```
 
 ## Usage
 
