@@ -9,7 +9,7 @@
 
 (def ^:private default-padding 1024)
 
-(defn ^:private body-size [tag]
+(defn body-size [tag]
 	(apply + (map #(+ 10 (common/frame-body-size %)) (:frames tag))))
 
 (def ^:private id3-header (b/ordered-map
@@ -17,6 +17,11 @@
 	:version (b/ordered-map :major (b/enum :byte {3 3 4 4}), :minor :byte)
 	:flags (b/bits [nil nil nil nil :footer :experimental :extended-header :unsynchronized]) ; ID3v2.3 doesn't really have a :footer tag, but it's not worth the complexity of separate header codecs
 	:size common/synchsafe-int))
+
+(def ^:private text-frame-keys {
+	:text [:content]
+	:user-text [:description :content]
+	:picture [:description]})
 
 (def ^:private id3
 	(b/header id3-header
@@ -34,6 +39,37 @@
 		(for [[desc [first & extra]] (group-by k frames)]
 			(if extra (error "Multiple %s:%s frames" (:id first) desc)
 				[desc (:content first)]))))
+
+(defn ^:private cannot-encode? [encoder value]
+	(let [f #(not (.canEncode encoder %))]
+		(if (coll? value)
+			(some f value)
+			(f value))))
+
+(def ^:private latin1-encoder
+	(.newEncoder (java.nio.charset.Charset/forName latin1)))
+
+(defn ^:private cannot-encode-latin1? [frame]
+	(some #(cannot-encode? latin1-encoder (% frame))
+		(text-frame-keys (common/frame-type (:id frame)))))
+
+(defn ^:private safe-encoding [tag]
+	({3 utf16 4 utf8}
+		(:major (:version tag))))
+
+(defn ^:private set-encoding [encoding tag]
+	(update-in tag [:frames]
+		(partial map (fn [frame]
+			(cond
+				(not (text-frame-keys (common/frame-type (:id frame))))
+					frame
+				encoding
+					(assoc frame :encoding encoding)
+				(not (:encoding frame))
+					(assoc frame :encoding
+						(if (cannot-encode-latin1? frame) (safe-encoding tag) latin1))
+				:else
+					frame)))))
 
 (defn ^:private full->normal [tag]
 	(into {}
@@ -69,8 +105,8 @@
 
 (defn ^:private simple->full [version tag]
 	(let [keyword->id (set/map-invert (common/frame-keywords version))]
-		(normal->full version (into {}
-			(for [[key content] tag]
+		(normal->full version
+			(into {} (for [[key content] tag]
 				(if-let [id (keyword->id key)]
 					[id [content]]
 					(error "Unknown frame key (%s)" key)))))))
@@ -79,40 +115,31 @@
 	(with-open [f (io/input-stream path)]
 		(b/decode id3-header f)))
 
-(defn ^:private deconvert-tag [version tag]
+(defn upconvert-tag
+"Detects which format `tag` is in, then converts it to full-format."
+	[tag & {:keys [version encoding]}]
 	(let [
 			version (or version 4)
-			deconvert (cond
+			upconvert (cond
 				(:magic-number tag) identity
 				(string? (first (first tag))) (partial normal->full version)
 				:else (partial simple->full version))]
-		(deconvert tag)))
+		(set-encoding encoding
+			(upconvert tag))))
 
-(defn ^:private convert-tag [fmt tag]
-	(let [convert (condp = fmt
+(defn downconvert-tag
+"Converts the full-format `tag` to the format specified by `fmt`."
+	[fmt tag]
+	(let [downconvert (condp = fmt
 			:full identity
 			:normal full->normal
 			:simple full->simple)]
-		(convert tag)))
+		(downconvert tag)))
 
 (defn ^:private add-padding [padding tag]
 	(assoc tag :size
 		(+ (body-size tag)
 			(or padding default-padding))))
-
-(defn ^:private set-encoding [encoding tag]
-	(let [default-encoding ({3 utf16 4 utf8} (:major (:version tag)))]
-		(update-in tag [:frames]
-			(partial map (fn [frame]
-				(cond
-					(not (#{:text :user-text :picture} (common/frame-type (:id frame))))
-						frame
-					encoding
-						(assoc frame :encoding encoding)
-					(not (:encoding frame))
-						(assoc frame :encoding default-encoding)
-					:else
-						frame))))))
 
 ; public API
 
@@ -121,7 +148,7 @@
 Options:
   :format  format in which to parse tag (:full, :normal or :simple, default :simple)"
 	[istream & {:keys [format]}]
-	(convert-tag (or format :simple)
+	(downconvert-tag (or format :simple)
 		(b/decode id3 istream)))
 
 (defn read-mp3
@@ -139,9 +166,10 @@ Options as in `read-tag`."
 "Evaluates `body` with `sym` bound to the mp3 `src`, then closes sym's input stream.
 Options as in `read-tag`."
 	[[sym src & opts] & body]
-	`(let [~sym (read-mp3 ~src ~@opts)]
-		(try ~@body
-			(finally (.close (:data ~sym))))))
+	(let [temp-sym (gensym)]
+		`(let [~temp-sym (read-mp3 ~src ~@opts), ~sym ~temp-sym]
+			(try ~@body
+				(finally (.close (:data ~temp-sym)))))))
 
 (defn write-tag
 "Writes an ID3v2 tag to `ostream`.
@@ -151,10 +179,8 @@ Options:
   :padding   bytes of padding to write (default 1024)"
 	[ostream tag & {:keys [version encoding padding]}]
 	(b/encode id3 ostream
-		(->> tag
-			(deconvert-tag version)
-			(set-encoding encoding)
-			(add-padding padding)))) ; add padding last, since other options (like encoding) can affect the tag size
+		(add-padding padding
+			(upconvert-tag tag :version version :encoding encoding))))
 
 (defn write-mp3
 "Writes an mp3 to `dest` (anything accepted by `clojure.java.io/output-stream`).
@@ -171,7 +197,7 @@ Options as in `write-tag`."
 Options as in `write-tag`, but :padding may be ignored."
 	[path tag & {:keys [version encoding padding]}]
 	(let [
-			tag (set-encoding encoding (deconvert-tag version tag))
+			tag (upconvert-tag tag :version version :encoding encoding)
 			size (body-size tag)
 			old-size (:size (read-header path))
 			padding-left (- old-size size)]

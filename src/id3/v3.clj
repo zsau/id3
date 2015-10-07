@@ -64,11 +64,11 @@
 	(b/compile-codec
 		(condp = (frame-type id)
 			:padding (b/ordered-map :content (b/repeated (b/constant :byte 0)))
-			:picture (picture-content size)
+			:picture (picture-content size charset)
 			:user-text (user-text-frame-content size charset string)
 			:text (text-frame-content size charset string)
 			:url (b/ordered-map :content (b/string latin1 :length size))
-			(b/ordered-map :content (b/repeated :byte :length size)))
+			(limit size (b/ordered-map :content byte-blob)))
 		#(dissoc % (keys header))
 		#(merge % header)))
 

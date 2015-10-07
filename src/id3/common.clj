@@ -84,11 +84,14 @@
 (defn picture-content [size charset-codec]
 	(limit size
 		(b/header charset-codec
-			(fn [enc] (b/ordered-map
-				:mime-type (null-terminated-string latin1)
-				:picture-type :byte
-				:description (null-terminated-string enc)
-				:content byte-blob))
+			(fn [enc] (b/compile-codec
+				(b/ordered-map
+					:mime-type (null-terminated-string latin1)
+					:picture-type :byte
+					:description (null-terminated-string enc)
+					:content byte-blob)
+				#(dissoc % :encoding)
+				#(assoc % :encoding enc)))
 			:encoding)))
 
 (defn int->synchsafe [n]
