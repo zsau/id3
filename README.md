@@ -1,12 +1,12 @@
 # id3
 
-A simple ID3v2 parser. Supports most common features of [ID3v2.3](http://id3.org/id3v2.3.0) and [ID3v2.4](http://id3.org/id3v2.4.0-structure).
+A simple ID3v2 parser, written in Clojure. Supports most common features of [ID3v2.3](http://id3.org/id3v2.3.0) and [ID3v2.4](http://id3.org/id3v2.4.0-structure).
 
 ## Artifact
 
 Leiningen dependency:
 ```clojure
-[zsau/id3 "0.1.0"]
+[zsau/id3 "0.1.1"]
 ```
 
 ## Usage
