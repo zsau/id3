@@ -1,4 +1,4 @@
-(defproject zsau/id3 "0.1.2"
+(defproject zsau/id3 "0.2.0"
 	:description "Simple ID3v2 parser"
 	:url "https://github.com/zsau/id3"
 	:license {
@@ -7,5 +7,5 @@
 	:profiles {
 		:dev {:resource-paths ["test/resources"]}}
 	:dependencies [
-		[org.clojure/clojure "1.8.0"]
-		[smee/binary "0.5.1"]])
+		[org.clojure/clojure "1.9.0"]
+		[smee/binary "0.5.3"]])
