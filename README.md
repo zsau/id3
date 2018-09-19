@@ -39,7 +39,7 @@ When using this API, keep in mind the distinction between a "tag" (just the ID3 
 ```clojure
 (read-tag istream & opts)
 ```
-Reads an ID3v2 tag from `istream`, whose format depends on the `:format` argument:
+Reads an ID3v2 tag from `istream`, returning a map whose format depends on the `:format` option:
 - `:simple` _(default)_ A basic format that supports only common ID3 frames, with keywordized names. Values are collections, to support multiple values. For a list of supported frames and their keys, see the output of `(frame-keywords N)`, where `N` is 3 (for ID3v2.3) or 4 (for ID3v2.4).
 ```clojure
 {:artist ["Billy Joel"], :title ["Piano Man"]}
