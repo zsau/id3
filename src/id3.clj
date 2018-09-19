@@ -46,12 +46,10 @@
 			(some f value)
 			(f value))))
 
-(def ^:private latin1-encoder
-	(.newEncoder (java.nio.charset.Charset/forName latin1)))
-
 (defn ^:private cannot-encode-latin1? [frame]
-	(some #(cannot-encode? latin1-encoder (% frame))
-		(text-frame-keys (common/frame-type (:id frame)))))
+	(let [latin1-encoder (.newEncoder (java.nio.charset.Charset/forName latin1))]
+		(some #(cannot-encode? latin1-encoder (% frame))
+			(text-frame-keys (common/frame-type (:id frame))))))
 
 (defn ^:private safe-encoding [tag]
 	({3 utf16 4 utf8}
@@ -101,14 +99,14 @@
 		(into {}
 			(for [[id contents] (full->normal tag)]
 				(when-let [key (id->keyword id)]
-					[key (first contents)])))))
+					[key contents])))))
 
 (defn ^:private simple->full [version tag]
 	(let [keyword->id (set/map-invert (common/frame-keywords version))]
 		(normal->full version
-			(into {} (for [[key content] tag]
+			(into {} (for [[key contents] tag]
 				(if-let [id (keyword->id key)]
-					[id [content]]
+					[id contents]
 					(error "Unknown frame key (%s)" key)))))))
 
 (defn ^:private read-header [path]

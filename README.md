@@ -6,7 +6,7 @@ A simple ID3v2 parser, written in Clojure. Supports most common features of [ID3
 
 Leiningen dependency:
 ```clojure
-[zsau/id3 "0.1.1"]
+[zsau/id3 "1.0.0"]
 ```
 
 ## Usage
@@ -14,21 +14,21 @@ Leiningen dependency:
 To parse the ID3 tag of an MP3:
 ```clojure
 (with-mp3 [mp3 "foo.mp3"] (:tag mp3))
-; {:artist "Michael Jackson" :title "Smooth Criminal"}
+; {:artist ["Michael Jackson"] :title ["Smooth Criminal"]}
 ```
 
 To write a new MP3 file with modified tags:
 ```clojure
 (with-mp3 [mp3 "foo.mp3"]
   (write-mp3 "bar.mp3"
-    (assoc-in mp3 [:tag :title] "Thriller")))
+    (assoc-in mp3 [:tag :title] ["Thriller"])))
 ```
 
 Or to overwrite an existing file's tags:
 ```clojure
 (overwrite-tag "foo.mp3"
   (with-mp3 [mp3 "foo.mp3"]
-    (assoc (:tag mp3) :title "Thriller")))
+    (assoc (:tag mp3) :title ["Thriller"])))
 ```
 
 ## API
@@ -39,16 +39,16 @@ When using this API, keep in mind the distinction between a "tag" (just the ID3 
 ```clojure
 (read-tag istream & opts)
 ```
-Reads an ID3v2 tag from `istream`. The only option is `:format`, which determines the format into which the tag will be parsed. Values:
-- `:simple` _(default)_ A basic format that supports only common ID3 frames, and only one value per text frame. For a list of supported frames and their keys, see the output of `(frame-keywords N)`, where `N` is 3 (for ID3v2.3) or 4 (for ID3v2.4).
+Reads an ID3v2 tag from `istream`, whose format depends on the `:format` argument:
+- `:simple` _(default)_ A basic format that supports only common ID3 frames, with keywordized names. Values are collections, to support multiple values. For a list of supported frames and their keys, see the output of `(frame-keywords N)`, where `N` is 3 (for ID3v2.3) or 4 (for ID3v2.4).
 ```clojure
-{:artist "Billy Joel", :title "Piano Man"}
+{:artist ["Billy Joel"], :title ["Piano Man"]}
 ```
-- `:normal` A more comprehensive format that should support all common cases. Note that values for text frames are sequential collections, because ID3v2.4 supports multiple values for all text frames.
+- `:normal` A more comprehensive format that should support all common cases. Keys are strings, corresponding to frame names from the ID3 specs.
 ```clojure
 {"TPE1" ["Billy Joel"], "TIT2" ["Piano Man"], "APIC" ({:content #<byte[] [B@6a331017>, :mime-type "image/png", :picture-type 3})}
 ```
-- `:full` Everything but the kitchen sink. This is way more info than you probably want or need, but it tells you nearly everything about the ID3 tag in gory detail.
+- `:full` Everything but the kitchen sink. This is more info than most will need, but it describes nearly everything about the ID3 tag in gory detail. Frames are listed in the order in which they appear in the tag.
 ```clojure
 {:size 2301322, :flags #{}, :version {:minor 0, :major 4}, :magic-number "ID3",
  :frames (
