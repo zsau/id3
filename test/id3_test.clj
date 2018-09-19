@@ -9,7 +9,18 @@
 		(apply write-tag buf tag opts)
 		(.toByteArray buf)))
 
-(deftest test-read
+(deftest test-formats
+	(let [formats {
+			:simple {:artist ["Nobody"], :title ["Nothing"]}
+			:normal {"TPE1" ["Nobody"], "TIT2" ["Nothing"]}
+			:full {:magic-number "ID3", :version {:major 4, :minor 0}, :flags #{}, :size 1059, :frames [
+				{:encoding "UTF-8", :content ["Nobody"], :size 7, :id "TPE1", :flags #{}}
+				{:encoding "UTF-8", :content ["Nothing"], :size 8, :id "TIT2", :flags #{}}]}}]
+		(testing "Reading tags"
+			(doseq [[fmt tag] formats]
+				(is (= tag (with-mp3 [mp3 "test/resources/v4utf8.mp3" :format fmt] (:tag mp3))))))))
+
+(deftest test-encodings
 	(let [t {:artist ["Nobody"], :title ["Nothing"]}]
 		(testing "Reading tags"
 			(doseq [file ["v3latin1" "v3utf16" "v4latin1" "v4utf8" "v4utf16" "v4utf16be"]]
