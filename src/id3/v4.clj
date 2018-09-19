@@ -47,7 +47,9 @@
 	"TSO2" :album-artist-sort
 	"TSOC" :composer-sort
 	"TMED" :media
-	"TCMP" :compilation})
+	"TCMP" :compilation
+	"APIC" :picture
+	"TXXX" :custom})
 
 (def charset (b/enum :byte encoding-constants))
 

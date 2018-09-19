@@ -33,10 +33,13 @@
 	"TOLY" :author
 	"TBPM" :bpm
 	"TYER" :date
+	"TORY" :original-date
 	"TOAL" :original-album
 	"TOPE" :original-artist
 	"TMED" :media
-	"TCMP" :compilation})
+	"TCMP" :compilation
+	"APIC" :picture
+	"TXXX" :custom})
 
 (def charset (b/enum :byte encoding-constants))
 
