@@ -11,50 +11,54 @@ Leiningen dependency:
 
 ## Usage
 
+Terminology note: the ID3 specs use the term *tag* to refer to the entire ID3 header, and *frame* to refer to the individual chunks of information that make up the tag. This conflicts with how the word "tag" is commonly used today, but since this is an ID3 library we use ID3's terminology.
+
 To parse the ID3 tag of an MP3:
 ```clojure
-(with-mp3 [mp3 "foo.mp3"] (:tag mp3))
-; {:artist ["Michael Jackson"] :title ["Smooth Criminal"]}
+(with-mp3 [mp3 "foo.mp3"] (:id3/tag mp3))
+#:id3.frame.name{:artist ["Led Zeppelin"], :album ["Led Zeppelin I"], :date ["1969-01-12"], :track-number ["01"], :title ["Good Times Bad Times"]}
 ```
 
-To write a new MP3 file with modified tags:
+Note that values are collections, because ID3v2.4 support multiple values for most frames. To write a new MP3 file with modified tags:
 ```clojure
 (with-mp3 [mp3 "foo.mp3"]
   (write-mp3 "bar.mp3"
-    (assoc-in mp3 [:tag :title] ["Thriller"])))
+    (assoc-in mp3 [:id3/tag :id3.frame.name/genre] ["Rock"])))
 ```
 
 Or to overwrite an existing file's tags:
 ```clojure
 (overwrite-tag "foo.mp3"
   (with-mp3 [mp3 "foo.mp3"]
-    (assoc (:tag mp3) :title ["Thriller"])))
+    (assoc (:id3/tag mp3) :id3.frame.name/genre ["Rock"])))
 ```
 
 ## API
 
-When using this API, keep in mind the distinction between a "tag" (just the ID3 metadata; see `read-tag`) and an "mp3" (both the metadata and the audio data; see `read-mp3`).
+When using this API, keep in mind the distinction between a *tag* (just the ID3 metadata; see `read-tag`) and an *mp3* (both the metadata and the audio data; see `read-mp3`).
 
 ### read-tag
 ```clojure
 (read-tag istream & opts)
 ```
-Reads an ID3v2 tag from `istream`, returning a map whose format depends on the `:format` option:
-- `:simple` _(default)_ A basic format that supports only common ID3 frames, with keywordized names. Values are collections, to support multiple values. For a list of supported frames and their keys, see the output of `(frame-keywords N)`, where `N` is 3 (for ID3v2.3) or 4 (for ID3v2.4).
+Reads an ID3v2 tag from `istream`, returning a map whose format depends on the `:id3/format` option:
+- `:id3.format/simple` _(default)_ A basic format that supports only common ID3 frames, with keywordized names. For a list of supported frames and their keys, see the output of `(frame-keywords N)`, where `N` is 3 (for ID3v2.3) or 4 (for ID3v2.4).
 ```clojure
-{:artist ["Billy Joel"], :title ["Piano Man"]}
+#:id3.frame/name{:artist ["Billy Joel"], :title ["Piano Man"],
+  :picture (#:id3.frame{:picture-type 3, :mime-type "image/jpeg", :content #object["[B" 0x15d8429d "[B@15d8429d"]})}
 ```
-- `:normal` A more comprehensive format that should support all common cases. Keys are strings, corresponding to frame names from the ID3 specs.
+- `:id3.format/normal` A more comprehensive format that should support all common cases. Keys are strings, corresponding to frame names from the ID3 specs.
 ```clojure
-{"TPE1" ["Billy Joel"], "TIT2" ["Piano Man"], "APIC" ({:content #<byte[] [B@6a331017>, :mime-type "image/png", :picture-type 3})}
+{"TPE1" ["Billy Joel"], "TIT2" ["Piano Man"],
+  "APIC" (#:id3.frame{:picture-type 3, :mime-type "image/jpeg", :content #object["[B" 0x15d8429d "[B@15d8429d"]})}
 ```
-- `:full` Everything but the kitchen sink. This is more info than most will need, but it describes nearly everything about the ID3 tag in gory detail. Frames are listed in the order in which they appear in the tag.
+- `:id3.format/full` Everything but the kitchen sink. This is more info than most will need, but it describes nearly everything about the ID3 tag in gory detail. Frames are listed in the order in which they appear in the tag.
 ```clojure
-{:size 2301322, :flags #{}, :version {:minor 0, :major 4}, :magic-number "ID3",
- :frames (
-   {:encoding "ISO-8859-1", :content ["Billy Joel"], :size 11, :id "TPE1", :flags #{}}
-   {:encoding "ISO-8859-1", :content ["Piano Man"], :size 10, :id "TIT2", :flags #{}}
-   {:id "APIC", :size 696989, :flags #{}, :content #<byte[] [B@c720a30>, :description "cover", :picture-type 3, :mime-type "image/png"})}
+#:id3{:size 2301322, :flags #{}, :version 4, :revision 0, :magic-number "ID3",
+  :frames (
+    #:id3.frame{:id "TPE1", :encoding "ISO-8859-1", :size 11, :flags #{}, :content ["Billy Joel"]}
+    #:id3.frame{:id "TIT2", :encoding "ISO-8859-1", :size 10, :flags #{}, :content ["Piano Man"]}
+    #:id3.frame{:id "APIC", :encoding "ISO-8859-1", :size 89815, :flags #{}, :picture-type 3, :mime-type "image/jpeg", :description "", :content #object["[B" 0x15d8429d "[B@15d8429d"]})}
 ```
 
 ### read-mp3
@@ -62,8 +66,8 @@ Reads an ID3v2 tag from `istream`, returning a map whose format depends on the `
 (read-mp3 src & opts)
 ```
 Parses the MP3 file at `src` (anything accepted by `clojure.java.io/input-stream`). Returns a map with these keys:
-- `:tag` the parsed ID3 tag
-- `:data` an *open input stream* positioned after the ID3 tag (i.e. at the start of the MPEG frames). You need to close this stream when you're done with it, but see `with-mp3`.
+- `:id3/tag` the parsed ID3 tag
+- `:id3/data` an *open input stream* positioned after the ID3 tag (i.e. at the start of the MPEG frames). You need to close this stream when you're done with it, but see `with-mp3`.
 
 Options as in `read-tag`.
 
@@ -78,9 +82,9 @@ Convenience macro that evaluates `body` with `sym` bound to the mp3 at `src`, th
 (write-tag ostream tag & opts)
 ```
 Writes an ID3v2 tag to `ostream`. Writes only the tag, not any audio data. Options:
-- `:version` ID3v2.x tag version to write (3 or 4, default 4)
-- `:encoding` character encoding to use for text frames, etc. ID3v2.3 supports ISO-8859-1 and UTF-16; ID3v2.4 supports those plus UTF-16BE and UTF-8.
-- `:padding` bytes of padding to write (default 1024)
+- `:id3/version` ID3v2.x tag version to write (3 or 4, default 4)
+- `:id3/encoding` character encoding to use for text frames, etc. ID3v2.3 supports ISO-8859-1 and UTF-16; ID3v2.4 supports those plus UTF-16BE and UTF-8.
+- `:id3/padding` bytes of padding to write (default 1024)
 
 ### write-mp3
 ```clojure
@@ -92,7 +96,7 @@ Writes an mp3 (tag and audio data) to `dest` (anything accepted by `clojure.java
 ```clojure
 (overwrite-tag path tag & opts)
 ```
-Overwrites the ID3 tag of the existing MP3 file at `path`. Will avoid rewriting the file's audio data if possible. Options as in `write-tag`, but `:padding` may be ignored.
+Overwrites the ID3 tag of the existing MP3 file at `path`. Will avoid rewriting the file's audio data if possible. Options as in `write-tag`, but padding may be ignored.
 
 ## Caveats
 
@@ -108,5 +112,4 @@ Overwrites the ID3 tag of the existing MP3 file at `path`. Will avoid rewriting 
 
 Copyright © 2014 zsau
 
-Distributed under the Eclipse Public License, either version 1.0 or (at
-your option) any later version.
+Distributed under the Eclipse Public License, either version 1.0 or (at your option) any later version.

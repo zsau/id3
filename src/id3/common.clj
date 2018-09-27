@@ -25,11 +25,12 @@
 
 (defn frame-type [id]
 	(cond
-		(= padding-id id) :padding
-		(= "APIC" id) :picture
-		(= "TXXX" id) :user-text
-		(= \T (first id)) :text
-		(= \W (first id)) :url))
+		(= padding-id id) :id3.frame.type/padding
+		(= "APIC" id) :id3.frame.type/picture
+		(= "TXXX" id) :id3.frame.type/user-text
+		(= \T (first id)) :id3.frame.type/text
+		(= \W (first id)) :id3.frame.type/url
+		:else :id3.frame.type/blob))
 
 (defn encoded-size [codec value]
 	(let [out (java.io.ByteArrayOutputStream.)]
@@ -64,9 +65,9 @@
 	(limit size
 		(b/header charset-codec
 			(fn [enc] (b/compile-codec (charset->content-codec enc)
-				:content
-				(partial hash-map :encoding enc :content)))
-			:encoding)
+				:id3.frame/content
+				(partial hash-map :id3.frame/encoding enc :id3.frame/content)))
+			:id3.frame/encoding)
 		:truncate? true))
 
 (defn user-text-frame-content [size charset-codec charset->content-codec]
@@ -74,11 +75,11 @@
 		(b/header charset-codec
 			(fn [enc] (b/compile-codec
 				(b/ordered-map
-					:description (null-terminated-string enc)
-					:content (charset->content-codec enc))
-				#(dissoc % :encoding)
-				#(assoc % :encoding enc)))
-			:encoding)
+					:id3.frame/description (null-terminated-string enc)
+					:id3.frame/content (charset->content-codec enc))
+				#(dissoc % :id3.frame/encoding)
+				#(assoc % :id3.frame/encoding enc)))
+			:id3.frame/encoding)
 		:truncate? true))
 
 (defn picture-content [size charset-codec]
@@ -86,13 +87,13 @@
 		(b/header charset-codec
 			(fn [enc] (b/compile-codec
 				(b/ordered-map
-					:mime-type (null-terminated-string latin1)
-					:picture-type :byte
-					:description (null-terminated-string enc)
-					:content byte-blob)
-				#(dissoc % :encoding)
-				#(assoc % :encoding enc)))
-			:encoding)))
+					:id3.frame/mime-type (null-terminated-string latin1)
+					:id3.frame/picture-type :byte
+					:id3.frame/description (null-terminated-string enc)
+					:id3.frame/content byte-blob)
+				#(dissoc % :id3.frame/encoding)
+				#(assoc % :id3.frame/encoding enc)))
+			:id3.frame/encoding)))
 
 (defn int->synchsafe [n]
 	{:pre [(< -1 n (bit-shift-left 1 28))]}
@@ -117,26 +118,26 @@
 		(error "Unknown frame id (%s)" id))
 	id)
 
-(defn remove-padding [{:keys [frames size] :as tag}]
-	(update-in tag [:frames]
-		(partial remove (comp #{:padding} frame-type :id))))
+(defn remove-padding [{:id3/keys [frames size] :as tag}]
+	(update-in tag [:id3/frames]
+		(partial remove (comp #{:id3.frame.type/padding} frame-type :id3.frame/id))))
 
-(defn frame-body-size [{:keys [id content encoding description] :as body}]
+(defn frame-body-size [{:id3.frame/keys [id content encoding description] :as body}]
 	(let [null-size (chunk-size encoding)]
 		(condp = (frame-type id)
-			:picture (+ 1 ; encoding
-				(encoded-size (null-terminated-string latin1) (:mime-type body)) ; mime type
+			:id3.frame.type/picture (+ 1 ; encoding
+				(encoded-size (null-terminated-string latin1) (:id3.frame/mime-type body)) ; mime type
 				1 ; picture type
 				(encoded-size (null-terminated-string encoding) description) ; description
 				(alength content)) ; picture data
-			:user-text (+ 1 ; encoding
+			:id3.frame.type/user-text (+ 1 ; encoding
 				(- null-size) ; no trailing null
 				(encoded-size (repeated-string encoding) (cons description content)))
-			:text (+ 1
+			:id3.frame.type/text (+ 1
 				(- null-size)
 				(encoded-size (repeated-string encoding) content))
-			:url (alength (.getBytes content latin1))
+			:id3.frame.type/url (alength (.getBytes content latin1))
 			(alength content))))
 
-(defmulti body-codec (comp :major :version))
-(defmulti frame-keywords identity)
+(defmulti body-codec :id3/version)
+(defmulti frame-names identity)

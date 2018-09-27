@@ -13,33 +13,35 @@
 		(split "AENC APIC COMM COMR ENCR EQUA ETCO GEOB GRID IPLS LINK MCDI MLLT OWNE PRIV PCNT POPM POSS RBUF RVAD RVRB SYLT SYTC TALB TBPM TCOM TCON TCOP TDAT TDLY TENC TEXT TFLT TIME TIT1 TIT2 TIT3 TKEY TLAN TLEN TMED TOAL TOFN TOLY TOPE TORY TOWN TPE1 TPE2 TPE3 TPE4 TPOS TPUB TRCK TRDA TRSN TRSO TSIZ TSRC TSSE TYER TXXX UFID USER USLT WCOM WCOP WOAF WOAR WOAS WORS WPAY WPUB WXXX"))))
 
 ; mostly borrowed from quodlibet
-(def frame-id->keyword {
-	"TIT1" :grouping
-	"TIT2" :title
-	"TIT3" :version
-	"TPE1" :artist
-	"TPE2" :album-artist
-	"TPE3" :conductor
-	"TPE4" :arranger
-	"TEXT" :lyricist
-	"TCOM" :composer
-	"TENC" :encoded-by
-	"TALB" :album
-	"TRCK" :track-number
-	"TPOS" :disc-number
-	"TSRC" :isrc
-	"TCOP" :copyright
-	"TPUB" :organization
-	"TOLY" :author
-	"TBPM" :bpm
-	"TYER" :date
-	"TORY" :original-date
-	"TOAL" :original-album
-	"TOPE" :original-artist
-	"TMED" :media
-	"TCMP" :compilation
-	"APIC" :picture
-	"TXXX" :custom})
+(def frame-name->id #:id3.frame.name{
+	:grouping "TIT1"
+	:title "TIT2"
+	:version "TIT3"
+	:artist "TPE1"
+	:album-artist "TPE2"
+	:conductor "TPE3"
+	:arranger "TPE4"
+	:lyricist "TEXT"
+	:composer "TCOM"
+	:encoded-by "TENC"
+	:album "TALB"
+	:track-number "TRCK"
+	:disc-number "TPOS"
+	:isrc "TSRC"
+	:copyright "TCOP"
+	:organization "TPUB"
+	:author "TOLY"
+	:bpm "TBPM"
+	:date "TYER"
+	:original-date "TORY"
+	:original-album "TOAL"
+	:original-artist "TOPE"
+	:media "TMED"
+	:compilation "TCMP"
+	:picture "APIC"
+	:custom "TXXX"})
+
+(def frame-id->name (set/map-invert frame-name->id))
 
 (def charset (b/enum :byte encoding-constants))
 
@@ -51,51 +53,54 @@
 			(.getBytes s charset))
 		#(vector (String. (byte-array %) charset))))
 
-(defn body-size [{:keys [extended-header frames]}]
+(defn body-size [{:id3/keys [extended-header frames]}]
 	(apply + (map #(+ 10 (frame-body-size %)) frames)))
 
 (def frame-header
 	(let [verify-id (partial verify-frame-id frame-ids)]
 		(b/ordered-map
-			:id (b/compile-codec (b/string latin1 :length 4) verify-id verify-id)
-			:size :int-be
-			:flags (b/bits [
-				nil nil nil nil nil :grouped :encrypted :compressed
-				nil nil nil nil nil :read-only :file-alter-preserve :tag-alter-preserve]))))
+			:id3.frame/id (b/compile-codec (b/string latin1 :length 4) verify-id verify-id)
+			:id3.frame/size :int-be
+			:id3.frame/flags (b/bits [
+				nil nil nil nil nil :id3.frame.flag/grouped :id3.frame.flag/encrypted :id3.frame.flag/compressed
+				nil nil nil nil nil :id3.frame.flag/read-only :id3.frame.flag/file-alter-preserve :id3.frame.flag/tag-alter-preserve]))))
 
-(defn frame-header->body [{:keys [id size flags] :as header}]
+(defn frame-header->body [{:id3.frame/keys [id size flags] :as header}]
 	(b/compile-codec
 		(condp = (frame-type id)
-			:padding (b/ordered-map :content (b/repeated (b/constant :byte 0)))
-			:picture (picture-content size charset)
-			:user-text (user-text-frame-content size charset string)
-			:text (text-frame-content size charset string)
-			:url (b/ordered-map :content (b/string latin1 :length size))
-			(limit size (b/ordered-map :content byte-blob)))
+			:id3.frame.type/padding (b/ordered-map :id3.frame/content (b/repeated (b/constant :byte 0)))
+			:id3.frame.type/picture (picture-content size charset)
+			:id3.frame.type/user-text (user-text-frame-content size charset string)
+			:id3.frame.type/text (text-frame-content size charset string)
+			:id3.frame.type/url (b/ordered-map :id3.frame/content (b/string latin1 :length size))
+			(limit size (b/ordered-map :id3.frame/content byte-blob)))
 		#(dissoc % (keys header))
 		#(merge % header)))
 
-(defn frame-body->header [{:keys [id flags content] :as body}] {
+(defn frame-body->header [{:id3.frame/keys [id flags content] :as body}] #:id3.frame{
 	:id id
-	:flags (set/intersection flags #{:read-only :file-alter-preserve :tag-alter-preserve})
+	:flags (set/intersection flags #{:id3.frame.flag/read-only :id3.frame.flag/file-alter-preserve :id3.frame.flag/tag-alter-preserve})
 	:size (frame-body-size body)})
 
 (def frame (b/header frame-header frame-header->body frame-body->header))
 
 (def extended-header
-	(b/header (b/ordered-map :size :int-be, :flags (b/bits [nil nil nil nil nil nil nil :crc]))
+	(b/header
+		(b/ordered-map
+			:id3.extended-header/size :int-be
+			:id3.extended-header/flags (b/bits [nil nil nil nil nil nil nil :id3.extended-header.flag/crc]))
 		(fn [h] (apply b/ordered-map (concat
-			[:padding :int-be]
-			(when (:crc (:flags h)) [:crc :int-be]))))
+			[:id3.extended-header/padding :int-be]
+			(when (:id3.extended-header.flag/crc (:id3.extended-header/flags h)) [:id3.extended-header.flag/crc :int-be]))))
 		nil))
 
-(defn header->body [{:keys [flags size] :as header}]
+(defn header->body [{:id3/keys [flags size] :as header}]
 	(b/compile-codec
 		(apply b/ordered-map (concat
-			(when (:extended-header flags) [:extended-header extended-header])
-			[:frames (limit size (b/repeated frame))]))
+			(when (:id3/extended-header flags) [:id3/extended-header extended-header])
+			[:id3/frames (limit size (b/repeated frame))]))
 		#(apply dissoc % (keys header))
 		#(remove-padding (merge % header))))
 
 (defmethod body-codec 3 [header] (header->body header))
-(defmethod frame-keywords 3 [version] frame-id->keyword)
+(defmethod frame-names 3 [version] frame-name->id)
