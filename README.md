@@ -44,7 +44,7 @@ When using this API, keep in mind the distinction between a *tag* (just the ID3 
 Reads an ID3v2 tag from `istream`, returning a map whose format depends on the `:id3/format` option:
 - `:id3.format/simple` _(default)_ A basic format that supports only common ID3 frames, with keywordized names. For a list of supported frames and their keys, see the output of `(frame-keywords N)`, where `N` is 3 (for ID3v2.3) or 4 (for ID3v2.4).
 ```clojure
-#:id3.frame/name{:artist ["Billy Joel"], :title ["Piano Man"],
+#:id3.frame.name{:artist ["Billy Joel"], :title ["Piano Man"],
   :picture (#:id3.frame{:picture-type 3, :mime-type "image/jpeg", :content #object["[B" 0x15d8429d "[B@15d8429d"]})}
 ```
 - `:id3.format/normal` A more comprehensive format that should support all common cases. Keys are strings, corresponding to frame names from the ID3 specs.
