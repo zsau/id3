@@ -41,24 +41,24 @@ When using this API, keep in mind the distinction between a *tag* (just the ID3 
 ```clojure
 (read-tag istream & opts)
 ```
-Reads an ID3v2 tag from `istream`, returning a map whose format depends on the `:id3/format` option:
-- `:id3.format/simple` _(default)_ A basic format that supports only common ID3 frames, with keywordized names. For a list of supported frames and their keys, see the output of `(frame-keywords N)`, where `N` is 3 (for ID3v2.3) or 4 (for ID3v2.4).
+Reads an ID3v2 tag from `istream`, returning a map whose format depends on the `:format` option:
+- `:simple` _(default)_ A basic format that supports only common ID3 frames, with keywordized names. For a list of supported frames and their keys, see the output of `(frame-keywords N)`, where `N` is 3 (for ID3v2.3) or 4 (for ID3v2.4).
 ```clojure
 #:id3.frame.name{:artist ["Billy Joel"], :title ["Piano Man"],
-  :picture (#:id3.frame{:picture-type 3, :mime-type "image/jpeg", :content #object["[B" 0x15d8429d "[B@15d8429d"]})}
+  :picture (#:id3.frame{:picture-type 3, :mime-type "image/jpeg", :bytes #object["[B" 0x15d8429d "[B@15d8429d"]})}
 ```
-- `:id3.format/normal` A more comprehensive format that should support all common cases. Keys are strings, corresponding to frame names from the ID3 specs.
+- `:normal` A more comprehensive format that should support all common cases. Keys are strings, corresponding to frame names from the ID3 specs.
 ```clojure
 {"TPE1" ["Billy Joel"], "TIT2" ["Piano Man"],
-  "APIC" (#:id3.frame{:picture-type 3, :mime-type "image/jpeg", :content #object["[B" 0x15d8429d "[B@15d8429d"]})}
+  "APIC" (#:id3.frame{:picture-type 3, :mime-type "image/jpeg", :bytes #object["[B" 0x15d8429d "[B@15d8429d"]})}
 ```
-- `:id3.format/full` Everything but the kitchen sink. This is more info than most will need, but it describes nearly everything about the ID3 tag in gory detail. Frames are listed in the order in which they appear in the tag.
+- `:full` Everything but the kitchen sink. This is more info than most will need, but it describes nearly everything about the ID3 tag in gory detail. Frames are listed in the order in which they appear in the tag.
 ```clojure
 #:id3{:size 2301322, :flags #{}, :version 4, :revision 0, :magic-number "ID3",
   :frames (
     #:id3.frame{:id "TPE1", :encoding "ISO-8859-1", :size 11, :flags #{}, :content ["Billy Joel"]}
     #:id3.frame{:id "TIT2", :encoding "ISO-8859-1", :size 10, :flags #{}, :content ["Piano Man"]}
-    #:id3.frame{:id "APIC", :encoding "ISO-8859-1", :size 89815, :flags #{}, :picture-type 3, :mime-type "image/jpeg", :description "", :content #object["[B" 0x15d8429d "[B@15d8429d"]})}
+    #:id3.frame{:id "APIC", :encoding "ISO-8859-1", :size 89815, :flags #{}, :picture-type 3, :mime-type "image/jpeg", :description "", :bytes #object["[B" 0x15d8429d "[B@15d8429d"]})}
 ```
 
 ### read-mp3
@@ -82,13 +82,13 @@ Convenience macro that evaluates `body` with `sym` bound to the mp3 at `src`, th
 (write-tag ostream tag & opts)
 ```
 Writes an ID3v2 tag to `ostream`. Writes only the tag, not any audio data. Options:
-- `:id3/version` ID3v2.x tag version to write (3 or 4, default 4)
-- `:id3/encoding` character encoding to use for text frames, etc. ID3v2.3 supports ISO-8859-1 and UTF-16; ID3v2.4 supports those plus UTF-16BE and UTF-8.
-- `:id3/padding` bytes of padding to write (default 1024)
+- `:version` ID3v2.x tag version to write (3 or 4, default 4)
+- `:encoding` character encoding to use for text frames, etc. ID3v2.3 supports ISO-8859-1 and UTF-16; ID3v2.4 supports those plus UTF-16BE and UTF-8.
+- `:padding` bytes of padding to write (default 1024)
 
 ### write-mp3
 ```clojure
-(write-mp3 dest tag & opts)
+(write-mp3 dest mp3 & opts)
 ```
 Writes an mp3 (tag and audio data) to `dest` (anything accepted by `clojure.java.io/output-stream`). Options as in `write-tag`.
 

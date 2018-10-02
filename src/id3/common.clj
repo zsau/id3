@@ -29,6 +29,7 @@
 		(= "APIC" id) :id3.frame.type/picture
 		(= "TXXX" id) :id3.frame.type/user-text
 		(= \T (first id)) :id3.frame.type/text
+		(= "WXXX" id) :id3.frame.type/user-url
 		(= \W (first id)) :id3.frame.type/url
 		:else :id3.frame.type/blob))
 
@@ -82,6 +83,18 @@
 			:id3.frame/encoding)
 		:truncate? true))
 
+(defn user-url-frame-content [size charset-codec charset->content-codec]
+	(limit size
+		(b/header charset-codec
+			(fn [enc] (b/compile-codec
+				(b/ordered-map
+					:id3.frame/description (null-terminated-string enc)
+					:id3.frame/url (charset->content-codec latin1))
+				#(dissoc % :id3.frame/encoding)
+				#(assoc % :id3.frame/encoding enc)))
+			:id3.frame/encoding)
+		:truncate? true))
+
 (defn picture-content [size charset-codec]
 	(limit size
 		(b/header charset-codec
@@ -90,7 +103,7 @@
 					:id3.frame/mime-type (null-terminated-string latin1)
 					:id3.frame/picture-type :byte
 					:id3.frame/description (null-terminated-string enc)
-					:id3.frame/content byte-blob)
+					:id3.frame/bytes byte-blob)
 				#(dissoc % :id3.frame/encoding)
 				#(assoc % :id3.frame/encoding enc)))
 			:id3.frame/encoding)))
@@ -122,22 +135,27 @@
 	(update-in tag [:id3/frames]
 		(partial remove (comp #{:id3.frame.type/padding} frame-type :id3.frame/id))))
 
-(defn frame-body-size [{:id3.frame/keys [id content encoding description] :as body}]
+(defn frame-body-size [{:id3.frame/keys [id content bytes url encoding description] :as body}]
 	(let [null-size (chunk-size encoding)]
 		(condp = (frame-type id)
 			:id3.frame.type/picture (+ 1 ; encoding
 				(encoded-size (null-terminated-string latin1) (:id3.frame/mime-type body)) ; mime type
 				1 ; picture type
 				(encoded-size (null-terminated-string encoding) description) ; description
-				(alength content)) ; picture data
+				(alength bytes)) ; picture data
 			:id3.frame.type/user-text (+ 1 ; encoding
 				(- null-size) ; no trailing null
 				(encoded-size (repeated-string encoding) (cons description content)))
 			:id3.frame.type/text (+ 1
 				(- null-size)
 				(encoded-size (repeated-string encoding) content))
-			:id3.frame.type/url (alength (.getBytes content latin1))
-			(alength content))))
+			:id3.frame.type/user-url (+ 1
+				(- null-size)
+				(encoded-size (repeated-string encoding) (cons description url)))
+			:id3.frame.type/url (alength (.getBytes url latin1))
+			:id3.frame.type/blob (alength bytes))))
 
 (defmulti body-codec :id3/version)
-(defmulti frame-names identity)
+(defmulti frame-names-for-version identity)
+(defmulti frame-ids-for-version identity)
+(defmulti encodings-for-version identity)

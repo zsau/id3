@@ -1,7 +1,20 @@
 #!/bin/bash
-cp notag.mp3 v3latin1.mp3 && eyeD3 -2 --no-tagging-time-frame --to-v2.3 --set-encoding=latin1 -a Nobody -t Nothing v3latin1.mp3
-cp notag.mp3 v3utf16.mp3 && eyeD3 -2 --no-tagging-time-frame --to-v2.3 --set-encoding=utf16-LE -a Nobody -t Nothing v3utf16.mp3
-cp notag.mp3 v4latin1.mp3 && eyeD3 -2 --no-tagging-time-frame --to-v2.4 --set-encoding=latin1 -a Nobody -t Nothing v4latin1.mp3
-cp notag.mp3 v4utf8.mp3 && eyeD3 -2 --no-tagging-time-frame --to-v2.4 --set-encoding=utf8 -a Nobody -t Nothing v4utf8.mp3
-cp notag.mp3 v4utf16.mp3 && eyeD3 -2 --no-tagging-time-frame --to-v2.4 --set-encoding=utf16-LE -a Nobody -t Nothing v4utf16.mp3
-cp notag.mp3 v4utf16be.mp3 && eyeD3 -2 --no-tagging-time-frame --to-v2.4 --set-encoding=utf16-BE -a Nobody -t Nothing v4utf16be.mp3
+set -euo pipefail
+
+for enc in latin1 utf8 utf16 utf16-be; do
+	BASIC="basic-v2.4-$enc.mp3"
+	cp notag.mp3 "$BASIC" && eyeD3 -Q -2 --to-v2.4 --encoding=$enc -a Nobody -t Nothing "$BASIC"
+	NON_LATIN="non-latin-v2.4-$enc.mp3"
+	if [ $enc != latin1 ]; then
+		cp notag.mp3 "$NON_LATIN" && eyeD3 -Q -2 --to-v2.4 --encoding=$enc -a 'Mötley Crüe' -t '白い夏と緑の自転車 赤い髪と黒いギター' "$NON_LATIN"
+	fi
+done
+
+for enc in latin1 utf16; do
+	BASIC="basic-v2.3-$enc.mp3"
+	cp notag.mp3 "$BASIC" && eyeD3 -Q -2 --to-v2.3 --encoding=$enc -a Nobody -t Nothing "$BASIC"
+	NON_LATIN="non-latin-v2.3-$enc.mp3"
+	if [ $enc != latin1 ]; then
+		cp notag.mp3 "$NON_LATIN" && eyeD3 -Q -2 --to-v2.3 --encoding=$enc -a 'Mötley Crüe' -t '白い夏と緑の自転車 赤い髪と黒いギター' "$NON_LATIN"
+	fi
+done

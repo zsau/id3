@@ -2,32 +2,60 @@
 	(:import [java.io ByteArrayInputStream ByteArrayOutputStream])
 	(:require
 		[clojure.test :refer :all]
-		[id3 :refer :all]))
+		[id3 :refer :all]
+		[id3.common :refer :all]))
 
 (defn write-tag-to-bytes [tag & opts]
 	(let [buf (ByteArrayOutputStream.)]
 		(apply write-tag buf tag opts)
 		(.toByteArray buf)))
 
-(deftest test-formats
-	(let [formats {
-			:id3.format/simple #:id3.frame.name{:artist ["Nobody"], :title ["Nothing"]}
-			:id3.format/normal {"TPE1" ["Nobody"], "TIT2" ["Nothing"]}
-			:id3.format/full #:id3{:magic-number "ID3", :version 4, :revision 0, :flags #{}, :size 1059, :frames [
-				#:id3.frame{:encoding "UTF-8", :content ["Nobody"], :size 7, :id "TPE1", :flags #{}}
-				#:id3.frame{:encoding "UTF-8", :content ["Nothing"], :size 8, :id "TIT2", :flags #{}}]}}]
-		(testing "Reading tags"
-			(doseq [[fmt tag] formats]
-				(is (= tag (with-mp3 [mp3 "test/resources/v4utf8.mp3" :id3/format fmt] (:id3/tag mp3))))))))
+(defn encoding-short-name [enc]
+	(condp = enc
+		latin1 "latin1"
+		utf8 "utf8"
+		utf16 "utf16"
+		utf16be "utf16-be"))
 
-(deftest test-encodings
-	(let [t #:id3.frame.name{:artist ["Nobody"], :title ["Nothing"]}]
-		(testing "Reading tags"
-			(doseq [file ["v3latin1" "v3utf16" "v4latin1" "v4utf8" "v4utf16" "v4utf16be"]]
-				(is (= t (with-mp3 [mp3 (format "test/resources/%s.mp3" file)] (:id3/tag mp3))))))))
+(defn encoded-string-size [enc s]
+	(condp = enc
+		latin1 (inc (count s)) ; extra byte for the encoding marker
+		utf8 (inc (count s))
+		utf16 (+ 3 (* 2 (count s))) ; 2 bytes per char, plus encoding marker and extra 2 bytes for the BOM
+		utf16be (inc (* 2 (count s)))))
+
+(defn tag-size [enc text-frame-values]
+	; our test files have 256 bytes of padding
+	; plus 10 bytes for each frame header
+	(apply + 256 (map #(+ 10 (encoded-string-size enc %)) text-frame-values)))
+
+(deftest test-formats
+	(let [[artist title] ["Nobody" "Nothing"]]
+		(doseq [
+				ver [3 4]
+				enc (encodings-for-version ver)
+				[fmt tag] {
+					:simple
+						#:id3.frame.name{:artist [artist], :title [title]}
+					:normal
+						{"TPE1" [artist], "TIT2" [title]}
+					:full
+						#:id3{:magic-number "ID3", :version ver, :revision 0, :flags #{}, :size (tag-size enc [artist title]), :frames [
+							#:id3.frame{:id "TIT2", :flags #{}, :encoding enc, :content [title], :size (encoded-string-size enc title)}
+							#:id3.frame{:id "TPE1", :flags #{}, :encoding enc, :content [artist], :size (encoded-string-size enc artist)}]}}]
+			(let [file (format "test/resources/basic-v2.%d-%s.mp3" ver (encoding-short-name enc))]
+				(testing (str "Reading " file)
+					(is (= tag (with-mp3 [mp3 file :format fmt] (:id3/tag mp3)))))))))
+
+(deftest test-non-latin
+	(let [tag #:id3.frame.name{:artist ["Mötley Crüe"], :title ["白い夏と緑の自転車 赤い髪と黒いギター"]}]
+		(doseq [ver [3 4], enc (remove #{latin1} (encodings-for-version ver))]
+			(let [file (format "test/resources/non-latin-v2.%s-%s.mp3" ver (encoding-short-name enc))]
+				(testing (str "Reading " file)
+					(is (= tag (with-mp3 [mp3 file] (:id3/tag mp3)))))))))
 
 (deftest test-round-trip
-	(let [t #:id3.frame.name{:artist ["Nobody"], :title ["Nothing"]}]
-		(testing "Round-tripping tags"
-			(doseq [opts [[:id3/version 4] [:id3/version 3] [:id3/encoding "ISO-8859-1"] [:id3/encoding "UTF-16BE"] [:id3/padding 0]]]
-				(is (= t (read-tag (ByteArrayInputStream. (apply write-tag-to-bytes t opts)))))))))
+	(let [tag #:id3.frame.name{:artist ["Nobody"], :title ["Nothing"]}]
+		(doseq [opts [[:version 4] [:version 3] [:encoding latin1] [:encoding utf16] [:padding 0]]]
+			(testing (str "Round-tripping with " opts)
+				(is (= tag (read-tag (ByteArrayInputStream. (apply write-tag-to-bytes tag opts)))))))))

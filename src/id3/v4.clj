@@ -52,6 +52,7 @@
 	:custom "TXXX"})
 
 (def frame-id->name (set/map-invert frame-name->id))
+(def frame-names (set (keys frame-name->id)))
 
 (def charset (b/enum :byte encoding-constants))
 
@@ -71,12 +72,13 @@
 			:id3.frame.type/picture (picture-content size charset)
 			:id3.frame.type/user-text (user-text-frame-content size charset repeated-string)
 			:id3.frame.type/text (text-frame-content size charset repeated-string)
-			:id3.frame.type/url (b/ordered-map :id3.frame/content (b/string latin1 :length size))
-			(limit size (b/ordered-map :id3.frame/content byte-blob)))
+			:id3.frame.type/user-url (user-url-frame-content size charset null-terminated-string)
+			:id3.frame.type/url (b/ordered-map :id3.frame/url (b/string latin1 :length size))
+			:id3.frame.type/blob (limit size (b/ordered-map :id3.frame/bytes byte-blob)))
 		#(dissoc % (keys header))
 		#(merge % header)))
 
-(defn frame-body->header [{:id3.frame/keys [id flags content] :as body}] #:id3.frame{
+(defn frame-body->header [{:id3.frame/keys [id flags] :as body}] #:id3.frame{
 	:id id
 	:flags (set/intersection flags #{:id3.frame.flag/read-only :id3.frame.flag/file-alter-preserve :id3.frame.flag/tag-alter-preserve})
 	:size (frame-body-size body)})
@@ -110,4 +112,6 @@
 						(assoc body :id3/footer footer)))))))
 
 (defmethod body-codec 4 [header] (header->body header))
-(defmethod frame-names 4 [version] frame-name->id)
+(defmethod frame-names-for-version 4 [_] frame-name->id)
+(defmethod frame-ids-for-version 4 [_] frame-ids)
+(defmethod encodings-for-version 4 [_] (keys encoding-constants))
