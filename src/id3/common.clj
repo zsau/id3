@@ -137,7 +137,7 @@
 
 (defn frame-body-size [{:id3.frame/keys [id content bytes url encoding description] :as body}]
 	(let [null-size (chunk-size encoding)]
-		(condp = (frame-type id)
+		(case (frame-type id)
 			:id3.frame.type/picture (+ 1 ; encoding
 				(encoded-size (null-terminated-string latin1) (:id3.frame/mime-type body)) ; mime type
 				1 ; picture type

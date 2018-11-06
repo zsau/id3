@@ -74,7 +74,7 @@
 (defn ^:private full->normal [tag]
 	(into {}
 		(for [[id [first-frame & extra-frames :as frames]] (group-by :id3.frame/id (::frames tag))]
-			[id (condp = (common/frame-type id)
+			[id (case (common/frame-type id)
 				:id3.frame.type/text (if extra-frames (error "Multiple %s frames" id) (:id3.frame/content first-frame))
 				:id3.frame.type/url (if extra-frames (error "Mutliple %s frames" id) (:id3.frame/url first-frame))
 				:id3.frame.type/user-text (group-frames-by :id3.frame/description frames :id3.frame/content)
@@ -90,7 +90,7 @@
 	::frames (sort-by :id3.frame/id
 		(map #(assoc % :id3.frame/flags #{})
 			(apply concat (for [[id contents] tag]
-				(condp = (common/frame-type id)
+				(case (common/frame-type id)
 					:id3.frame.type/text [{:id3.frame/id id :id3.frame/content contents}]
 					:id3.frame.type/user-text (sort-by :id3.frame/description
 						(for [[desc vals] contents]
@@ -141,7 +141,7 @@
 (defn downconvert-tag
 "Converts the full-format `tag` to the format specified by `fmt`."
 	[fmt tag]
-	(let [downconvert (condp = fmt
+	(let [downconvert (case fmt
 			:full identity
 			:normal full->normal
 			:simple full->simple)]

@@ -67,7 +67,7 @@
 
 (defn frame-header->body [{:id3.frame/keys [id size flags] :as header}]
 	(b/compile-codec
-		(condp = (frame-type id)
+		(case (frame-type id)
 			:id3.frame.type/padding (b/ordered-map :id3.frame/content (b/repeated (b/constant :byte 0)))
 			:id3.frame.type/picture (picture-content size charset)
 			:id3.frame.type/user-text (user-text-frame-content size charset repeated-string)
