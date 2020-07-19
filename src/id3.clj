@@ -16,7 +16,8 @@
 	::magic-number (b/constant (b/string latin1 :length 3) "ID3")
 	::version (b/enum :byte {3 3 4 4})
 	::revision :byte
-	::flags (b/bits [nil nil nil nil :id3.flag/footer :id3.flag/experimental :id3.flag/extended-header :id3.flag/unsynchronized]) ; ID3v2.3 doesn't really have a footer tag, but it's not worth the complexity of separate header codecs
+	;; ID3v2.3 has no footer tag, but it's not worth the complexity of separate header codecs
+	::flags (b/bits [nil nil nil nil :id3.flag/footer :id3.flag/experimental :id3.flag/extended-header :id3.flag/unsynchronized])
 	::size common/synchsafe-int))
 
 (def text-frame-keys #:id3.frame.type{
@@ -152,7 +153,7 @@
 		(+ (body-size tag)
 			(or padding default-padding))))
 
-; public API
+;;; Public API
 
 (defn read-tag
 "Reads an ID3v2 tag from `istream`.

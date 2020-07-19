@@ -8,9 +8,9 @@
 (def utf16 "UTF-16")
 (def utf16be "UTF-16BE")
 
-; We rely on the fact that all encodings supported by ID3v2 can be handled in uniform chunks for purposes of finding null characters.
-; 	- Even though UTF-8 is a multibyte encoding, the null byte can't occur in a multibyte char
-; 	- Similarly, we can handle UTF-16 in 2-byte chunks despite the existence of surrogate pairs, because the 2-byte null char sequence can't occur as part of a surrogate pair.
+;; We rely on the fact that all encodings supported by ID3v2 can be handled in uniform chunks for purposes of finding null characters:
+;; 	- Even though UTF-8 is a multibyte encoding, the null byte can't occur in a multibyte char.
+;; 	- Similarly, we can handle UTF-16 in 2-byte chunks despite the existence of surrogate pairs, because the 2-byte null char sequence can't occur as part of a surrogate pair.
 (def chunk-size {
 	latin1 1
 	utf8 1
@@ -108,6 +108,8 @@
 				#(assoc % :id3.frame/encoding enc)))
 			:id3.frame/encoding)))
 
+;; For info about synchsafe integers, see section 6.2 of this document:
+;; https://id3.org/id3v2.4.0-structure
 (defn int->synchsafe [n]
 	{:pre [(< -1 n (bit-shift-left 1 28))]}
 	(reduce bit-or (int 0)

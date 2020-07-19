@@ -1,4 +1,7 @@
 (ns id3.v4
+"ID3v2.4 codecs.
+- https://id3.org/id3v2.4.0-structure
+- https://id3.org/id3v2.4.0-frames"
 	(:require
 		[id3.common :refer :all]
 		[clojure.set :as set]
@@ -15,7 +18,7 @@
 	(set (cons "TCMP" ; non-standard iTunes frame
 		(split "AENC APIC ASPI COMM COMR ENCR EQU2 ETCO GEOB GRID LINK MCDI MLLT OWNE PRIV PCNT POPM POSS RBUF RVA2 RVRB SEEK SIGN SYLT SYTC TALB TBPM TCOM TCON TCOP TDEN TDLY TDOR TDRC TDRL TDTG TENC TEXT TFLT TIPL TIT1 TIT2 TIT3 TKEY TLAN TLEN TMCL TMED TMOO TOAL TOFN TOLY TOPE TOWN TPE1 TPE2 TPE3 TPE4 TPOS TPRO TPUB TRCK TRSN TRSO TSOA TSOP TSOT TSRC TSSE TSST TXXX UFID USER USLT WCOM WCOP WOAF WOAR WOAS WORS WPAY WPUB WXXX"))))
 
-; mostly borrowed from quodlibet
+;; mostly borrowed from quodlibet
 (def frame-name->id #:id3.frame.name{
 	:grouping "TIT1"
 	:title "TIT2"

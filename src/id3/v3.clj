@@ -1,4 +1,6 @@
 (ns id3.v3
+"ID3v2.3 codecs.
+- https://id3.org/id3v2.3.0"
 	(:require
 		[id3.common :refer :all]
 		[clojure.set :as set]
@@ -12,7 +14,7 @@
 	(set (cons "TCMP" ; non-standard iTunes frame
 		(split "AENC APIC COMM COMR ENCR EQUA ETCO GEOB GRID IPLS LINK MCDI MLLT OWNE PRIV PCNT POPM POSS RBUF RVAD RVRB SYLT SYTC TALB TBPM TCOM TCON TCOP TDAT TDLY TENC TEXT TFLT TIME TIT1 TIT2 TIT3 TKEY TLAN TLEN TMED TOAL TOFN TOLY TOPE TORY TOWN TPE1 TPE2 TPE3 TPE4 TPOS TPUB TRCK TRDA TRSN TRSO TSIZ TSRC TSSE TYER TXXX UFID USER USLT WCOM WCOP WOAF WOAR WOAS WORS WPAY WPUB WXXX"))))
 
-; mostly borrowed from quodlibet
+;; mostly borrowed from quodlibet
 (def frame-name->id #:id3.frame.name{
 	:grouping "TIT1"
 	:title "TIT2"
@@ -46,7 +48,7 @@
 
 (def charset (b/enum :byte encoding-constants))
 
-;FIXME: should be able to use b/string
+;; FIXME: should be able to use `b/string`
 (defn string [charset]
 	(b/compile-codec (b/repeated :byte)
 		(fn [[s & excess]]
