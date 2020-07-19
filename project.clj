@@ -7,5 +7,5 @@
 	:profiles {
 		:dev {:resource-paths ["test/resources"]}}
 	:dependencies [
-		[org.clojure/clojure "1.9.0"]
-		[smee/binary "0.5.3"]])
+		[org.clojure/clojure "1.10.1"]
+		[smee/binary "0.5.5"]])
