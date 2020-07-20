@@ -19,7 +19,7 @@ To parse the ID3 tag of an MP3:
 #:id3.frame.name{:artist ["Led Zeppelin"], :album ["Led Zeppelin I"], :date ["1969-01-12"], :track-number ["01"], :title ["Good Times Bad Times"]}
 ```
 
-Note that values are collections, because ID3v2.4 support multiple values for most frames. To write a new MP3 file with modified tags:
+Note that values are collections, because ID3v2.4 supports multiple values for most frames. To write a new MP3 file with modified tags:
 ```clojure
 (with-mp3 [mp3 "foo.mp3"]
   (write-mp3 "bar.mp3"
