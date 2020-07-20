@@ -1,4 +1,4 @@
-(defproject zsau/id3 "1.0.0-SNAPSHOT"
+(defproject zsau/id3 "1.0.0"
 	:description "Simple ID3v2 parser"
 	:url "https://github.com/zsau/id3"
 	:license {
