@@ -1,9 +1,13 @@
 (ns id3-test
 	(:import [java.io ByteArrayInputStream ByteArrayOutputStream])
 	(:require
+		[clojure.spec.test.alpha :as stest]
 		[clojure.test :refer :all]
 		[id3 :refer :all]
-		[id3.common :refer :all]))
+		[id3.common :refer :all]
+		[id3.spec]))
+
+(stest/instrument)
 
 (defn write-tag-to-bytes [tag & opts]
 	(let [buf (ByteArrayOutputStream.)]
