@@ -2,7 +2,7 @@
 
 A simple ID3v2 parser, written in Clojure. Supports most common features of [ID3v2.3](http://id3.org/id3v2.3.0) and [ID3v2.4](http://id3.org/id3v2.4.0-structure).
 
-## Artifact
+## Installation
 
 Leiningen dependency:
 ```clojure
