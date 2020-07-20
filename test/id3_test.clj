@@ -5,13 +5,14 @@
 		[clojure.test :refer :all]
 		[id3 :refer :all]
 		[id3.common :refer :all]
-		[id3.spec]))
+		[id3.spec]
+		[medley.core :as m]))
 
 (stest/instrument)
 
-(defn write-tag-to-bytes [tag & opts]
+(defn write-tag-to-bytes [tag opts]
 	(let [buf (ByteArrayOutputStream.)]
-		(apply write-tag buf tag opts)
+		(m/mapply write-tag buf tag opts)
 		(.toByteArray buf)))
 
 (defn encoding-short-name [enc]
@@ -29,11 +30,11 @@
 		utf16be (inc (* 2 (count s)))))
 
 (defn tag-size [enc text-frame-values]
-	; our test files have 256 bytes of padding
-	; plus 10 bytes for each frame header
+	;; our test files have 256 bytes of padding,
+	;; plus 10 bytes for each frame header
 	(apply + 256 (map #(+ 10 (encoded-string-size enc %)) text-frame-values)))
 
-(deftest test-formats
+(deftest formats
 	(let [[artist title] ["Nobody" "Nothing"]]
 		(doseq [
 				ver [3 4]
@@ -47,18 +48,18 @@
 						#:id3{:magic-number "ID3", :version ver, :revision 0, :flags #{}, :size (tag-size enc [artist title]), :frames [
 							#:id3.frame{:id "TIT2", :flags #{}, :encoding enc, :content [title], :size (encoded-string-size enc title)}
 							#:id3.frame{:id "TPE1", :flags #{}, :encoding enc, :content [artist], :size (encoded-string-size enc artist)}]}}]
-			(let [file (format "test/resources/basic-v2.%d-%s.mp3" ver (encoding-short-name enc))]
-				(testing (str "Reading " file)
+			(testing (format "version: %s, encoding: %s" ver enc)
+				(let [file (format "test/resources/basic-v2.%d-%s.mp3" ver (encoding-short-name enc))]
 					(is (= tag (with-mp3 [mp3 file :format fmt] (:id3/tag mp3)))))))))
 
-(deftest test-non-latin
+(deftest non-latin
 	(let [tag #:id3.frame.name{:artist ["Mötley Crüe"], :title ["白い夏と緑の自転車 赤い髪と黒いギター"]}]
 		(doseq [ver [3 4], enc (remove #{latin1} (encodings-for-version ver))]
 			(let [file (format "test/resources/non-latin-v2.%s-%s.mp3" ver (encoding-short-name enc))]
 				(testing (str "Reading " file)
 					(is (= tag (with-mp3 [mp3 file] (:id3/tag mp3)))))))))
 
-(deftest test-round-trip
+(deftest round-trip
 	(let [tag #:id3.frame.name{:artist ["Nobody"], :title ["Nothing"]}]
 		(doseq [opts [[:version 4] [:version 3] [:encoding latin1] [:encoding utf16] [:padding 0]]]
 			(testing (str "Round-tripping with " opts)
