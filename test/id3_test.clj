@@ -59,8 +59,44 @@
 				(testing (str "Reading " file)
 					(is (= tag (with-mp3 [mp3 file] (:id3/tag mp3)))))))))
 
+(defn normalize-full-tag [tag]
+	(-> tag
+		(dissoc :id3/size)
+		(update :id3/frames (fn [frames]
+			(mapv #(dissoc % :id3.frame/size :id3.frame/encoding) frames)))))
+
 (deftest round-trip
-	(let [tag #:id3.frame.name{:artist ["Nobody"], :title ["Nothing"]}]
-		(doseq [opts [[:version 4] [:version 3] [:encoding latin1] [:encoding utf16] [:padding 0]]]
-			(testing (str "Round-tripping with " opts)
-				(is (= tag (read-tag (ByteArrayInputStream. (apply write-tag-to-bytes tag opts)))))))))
+	(let [
+			full-tag #:id3{
+				:magic-number "ID3"
+				:version 4
+				:revision 0
+				:flags #{}
+				:size 35
+				:frames [
+					#:id3.frame{
+						:encoding "ISO-8859-1"
+						:content ["Nothing"]
+						:size 8
+						:id "TIT2"
+						:flags #{}}
+					#:id3.frame{
+						:encoding "ISO-8859-1"
+						:content ["Nobody"]
+						:size 7
+						:id "TPE1"
+						:flags #{}}]}
+			normalize (fn [tag]
+				(cond-> tag
+					(= :full (id3/tag-format tag)) normalize-full-tag))]
+		(doseq [ver [nil 3 4], enc [nil latin1 utf16], pad [nil 0 123], fmt [:simple :normal :full]]
+			(let [
+					tag (id3/downconvert-tag full-tag fmt)
+					opts (m/remove-vals nil? {:version ver, :encoding enc, :padding pad})]
+				(testing (format "Round-tripping with format: %s, opts: %s" fmt opts)
+					(is (= (normalize tag)
+						(-> tag
+							(write-tag-to-bytes opts)
+							ByteArrayInputStream.
+							(read-tag :format fmt)
+							normalize))))))))
