@@ -14,24 +14,27 @@
 (defn body-size [tag]
 	(transduce (map #(+ 10 (common/frame-body-size %))) + (::frames tag)))
 
-(def id3-header (b/ordered-map
-	::magic-number (b/constant (b/string latin1 :length 3) "ID3")
-	::version (b/enum :byte {3 3 4 4})
-	::revision :byte
-	;; ID3v2.3 has no footer tag, but it's not worth the complexity of separate header codecs
-	::flags (b/bits [nil nil nil nil :id3.flag/footer :id3.flag/experimental :id3.flag/extended-header :id3.flag/unsynchronized])
-	::size common/synchsafe-int))
+(def id3-header
+	(b/ordered-map
+		::magic-number (b/constant (b/string latin1 :length 3) "ID3")
+		::version (b/enum :byte {3 3 4 4})
+		::revision :byte
+		;; ID3v2.3 has no footer tag, but it's not worth the complexity of separate header codecs
+		::flags (b/bits [nil nil nil nil :id3.flag/footer :id3.flag/experimental :id3.flag/extended-header :id3.flag/unsynchronized])
+		::size common/synchsafe-int))
 
-(def text-frame-keys #:id3.frame.type{
-	:text #{:id3.frame/content}
-	:user-text #{:id3.frame/description :id3.frame/content}
-	:picture #{:id3.frame/description}})
+(def text-frame-keys
+	#:id3.frame.type{
+		:text #{:id3.frame/content}
+		:user-text #{:id3.frame/description :id3.frame/content}
+		:picture #{:id3.frame/description}})
 
 (def id3
 	(b/header id3-header
-		(fn [header] (b/compile-codec (common/body-codec header)
-			#(apply dissoc % (keys header))
-			#(merge % header)))
+		(fn [header]
+			(b/compile-codec (common/body-codec header)
+				#(apply dissoc % (keys header))
+				#(merge % header)))
 		(fn [{::keys [version revision flags size] :as tag}] {
 			::magic-number "ID3"
 			::version version
