@@ -19,9 +19,14 @@
 
 (def padding-id "\u0000\u0000\u0000\u0000")
 
-(defn error [& args] (throw (Exception. (apply format args))))
+(defn ->coll [x]
+	(if (coll? x) x [x]))
 
-(defn split [s] (str/split s #" "))
+(defn error [& args]
+	(throw (Exception. (apply format args))))
+
+(defn split [s]
+	(str/split s #" "))
 
 (defn frame-type [id]
 	(cond

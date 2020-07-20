@@ -1,10 +1,9 @@
 (ns id3.spec
 	(:require
-		[id3.v3]
-		[id3.v4]
-		[id3.common]
 		[clojure.set :as set]
-		[clojure.spec.alpha :as s]))
+		[clojure.spec.alpha :as s]
+		[id3.common :as common]
+		[id3.v3] [id3.v4]))
 
 (s/def :id3.frame/id (set/union id3.v3/frame-ids id3.v4/frame-ids))
 (s/def :id3.frame/size (s/int-in 1 (Math/pow 2 28))) ; 32-bit synchsafe ints hold 28 bits
@@ -19,10 +18,10 @@
 (s/def :id3.frame/url string?)
 (s/def :id3.frame/content (s/coll-of string? :min-count 1 :gen-max 3))
 
-(defmulti frame-simple-v3 #(some-> % first id3.v3/frame-name->id id3.common/frame-type))
-(defmulti frame-simple-v4 #(some-> % first id3.v4/frame-name->id id3.common/frame-type))
-(defmulti frame-normal-v3 #(some-> % first id3.v3/frame-ids id3.common/frame-type))
-(defmulti frame-normal-v4 #(some-> % first id3.v4/frame-ids id3.common/frame-type))
+(defmulti frame-simple-v3 #(some-> % key id3.v3/frame-name->id common/frame-type))
+(defmulti frame-simple-v4 #(some-> % key id3.v4/frame-name->id common/frame-type))
+(defmulti frame-normal-v3 #(some-> % key id3.v3/frame-ids common/frame-type))
+(defmulti frame-normal-v4 #(some-> % key id3.v4/frame-ids common/frame-type))
 
 (s/def :id3.frame.format/simple-v3 (s/multi-spec frame-simple-v3 (fn [v _] v)))
 (s/def :id3.frame.format/simple-v4 (s/multi-spec frame-simple-v4 (fn [v _] v)))
@@ -30,13 +29,13 @@
 (s/def :id3.frame.format/normal-v4 (s/multi-spec frame-normal-v4 (fn [v _] v)))
 
 (defn frame-type-names [version frame-type]
-	(map first
-		(filter (fn [[name id]] (= frame-type (id3.common/frame-type id)))
-			(id3.common/frame-names-for-version version))))
+	(->> (common/frame-names-for-version version)
+		(filterv (comp #{frame-type} common/frame-type val))
+		(mapv key)))
 
 (defn frame-type-ids [version frame-type]
-	(filter (fn [id] (= frame-type (id3.common/frame-type id)))
-		(id3.common/frame-ids-for-version version)))
+	(filterv (comp #{frame-type} common/frame-type)
+		(common/frame-ids-for-version version)))
 
 (doseq [
 		[multimethod frame-type-keyfn] {
@@ -55,8 +54,8 @@
 		(defmethod multimethod frame-type [_]
 			(s/tuple (set valid-keys) val-spec))))
 
-(defmulti frame-full-v3 #(some-> % :id3.frame/id id3.v3/frame-ids id3.common/frame-type))
-(defmulti frame-full-v4 #(some-> % :id3.frame/id id3.v4/frame-ids id3.common/frame-type))
+(defmulti frame-full-v3 #(some-> % :id3.frame/id id3.v3/frame-ids common/frame-type))
+(defmulti frame-full-v4 #(some-> % :id3.frame/id id3.v4/frame-ids common/frame-type))
 (s/def :id3.frame.format/full-v3 (s/multi-spec frame-full-v3 (fn [v _] v)))
 (s/def :id3.frame.format/full-v4 (s/multi-spec frame-full-v4 (fn [v _] v)))
 
@@ -70,9 +69,9 @@
 			:picture [:id3.frame/bytes :id3.frame/picture-type :id3.frame/mime-type :id3.frame/description :id3.frame/encoding]
 			:blob [:id3.frame/bytes]}]
 	(defmethod multimethod frame-type [_]
-		(let [ks (concat additional-keys [:id3.frame/id :id3.frame/size :id3.frame/flags])]
-			; s/keys is a macro and expects a literal list of keys :(
-			(eval `(s/keys :req ~ks)))))
+		(let [ks (into additional-keys [:id3.frame/id :id3.frame/flags])]
+			;; s/keys is a macro and expects a literal list of keys :(
+			(eval `(s/keys :req ~ks :opt [:id3.frame/size])))))
 
 (s/def :id3/magic-number #{"ID3"})
 (s/def :id3/size (s/int-in 1 (Math/pow 2 28)))
@@ -81,7 +80,7 @@
 (s/def :id3/version #{3 4})
 (s/def :id3/revision (s/int-in 0 256))
 (s/def :id3/encoding :id3.frame/encoding)
-(s/def :id3/padding :id3.frame/size)
+(s/def :id3/padding nat-int?)
 (s/def :id3/format #{:simple :normal :full})
 (s/def :id3/frames (s/or
 	:v4 (s/coll-of :id3.frame.format/full-v4)
@@ -100,7 +99,9 @@
 			:v4 (s/coll-of :id3.frame.format/normal-v4 :kind map? :min-count 1)
 			:v3 (s/coll-of :id3.frame.format/normal-v3 :kind map? :min-count 1)))
 	(defmethod mm :full [_]
-		(s/keys :req [:id3/magic-number :id3/size :id3/flags :id3/version :id3/revision :id3/frames])))
+		(s/keys
+			:req [:id3/flags :id3/version :id3/revision :id3/frames]
+			:opt [:id3/magic-number :id3/size])))
 
 (s/def :id3/istream (partial instance? java.io.InputStream))
 (s/def :id3/ostream (partial instance? java.io.OutputStream))

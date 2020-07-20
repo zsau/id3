@@ -56,9 +56,6 @@
 			(.getBytes s charset))
 		#(vector (String. (byte-array %) charset))))
 
-(defn body-size [{:id3/keys [extended-header frames]}]
-	(apply + (map #(+ 10 (frame-body-size %)) frames)))
-
 (def frame-header
 	(let [verify-id (partial verify-frame-id frame-ids)]
 		(b/ordered-map
