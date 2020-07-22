@@ -162,6 +162,9 @@
 			:id3.frame.type/url (alength (.getBytes url latin1))
 			:id3.frame.type/blob (alength bytes))))
 
+(defn body-size [tag]
+	(transduce (map #(+ 10 (frame-body-size %))) + (:id3/frames tag)))
+
 (defmulti body-codec :id3/version)
 (defmulti frame-names-for-version identity)
 (defmulti frame-ids-for-version identity)

@@ -11,9 +11,6 @@
 
 (def latin1-encoder (.newEncoder (java.nio.charset.Charset/forName latin1)))
 
-(defn body-size [tag]
-	(transduce (map #(+ 10 (common/frame-body-size %))) + (::frames tag)))
-
 (def id3-header
 	(b/ordered-map
 		::magic-number (b/constant (b/string latin1 :length 3) "ID3")
@@ -40,7 +37,7 @@
 			::version version
 			::revision revision
 			::flags (set/intersection flags #{:id3.flag/experimental})
-			::size (max size (body-size tag))})))
+			::size (max size (common/body-size tag))})))
 
 (defn can-encode? [value encoder]
 	(every? #(.canEncode encoder %)
@@ -146,7 +143,7 @@
 
 (defn add-padding [padding tag]
 	(assoc tag ::size
-		(+ (body-size tag)
+		(+ (common/body-size tag)
 			(or padding default-padding))))
 
 ;;; Public API
@@ -206,7 +203,7 @@ Options as in `write-tag`, but :padding may be ignored."
 	[path tag & {:keys [version encoding padding]}]
 	(let [
 			tag (upconvert-tag tag :version version :encoding encoding)
-			size (body-size tag)
+			size (common/body-size tag)
 			old-size (::size (read-header path))
 			padding-left (- old-size size)]
 		(if (neg? padding-left) ; will it fit?
