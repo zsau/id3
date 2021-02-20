@@ -77,7 +77,7 @@
 				:id3.frame.type/user-text (m/map-vals :id3.frame/content (m/index-by :id3.frame/description frames))
 				:id3.frame.type/user-url (m/map-vals :id3.frame/content (m/index-by :id3.frame/description frames))
 				:id3.frame.type/picture (mapv #(select-keys % [:id3.frame/picture-type :id3.frame/mime-type :id3.frame/bytes]) frames)
-				:id3/frame.type/blob (mapv :id3.frame/bytes frames))))))
+				:id3.frame.type/blob (mapv :id3.frame/bytes frames))))))
 
 (defn normal->full [version tag] {
 	::magic-number "ID3"
