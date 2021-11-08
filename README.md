@@ -4,9 +4,13 @@ A simple ID3v2 parser, written in Clojure. Supports most common features of [ID3
 
 ## Installation
 
-Leiningen dependency:
+`deps.edn` dependency:
 ```clojure
-[zsau/id3 "1.0.0"]
+{:deps
+ {zsau/id3
+  {:git/tag "v1.0.1"
+   :git/url "https://github.com/zsau/id3.git"
+   :git/sha "94f7141e989d3b228979a736e4f2bc4734283c42"}}}
 ```
 
 ## Usage
