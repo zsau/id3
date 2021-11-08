@@ -8,5 +8,5 @@
 		:dev {:resource-paths ["test/resources"]}}
 	:dependencies [
 		[medley "1.3.0"]
-		[org.clojure/clojure "1.10.1"]
+		[org.clojure/clojure "1.10.3"]
 		[smee/binary "0.5.5"]])
