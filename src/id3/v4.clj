@@ -1,7 +1,7 @@
 (ns id3.v4
-"ID3v2.4 codecs.
-- https://id3.org/id3v2.4.0-structure
-- https://id3.org/id3v2.4.0-frames"
+	"ID3v2.4 codecs.
+	- https://id3.org/id3v2.4.0-structure
+	- https://id3.org/id3v2.4.0-frames"
 	(:require
 		[id3.common :refer :all]
 		[clojure.set :as set]

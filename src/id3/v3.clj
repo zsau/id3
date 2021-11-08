@@ -1,6 +1,6 @@
 (ns id3.v3
-"ID3v2.3 codecs.
-- https://id3.org/id3v2.3.0"
+	"ID3v2.3 codecs.
+	- https://id3.org/id3v2.3.0"
 	(:require
 		[id3.common :refer :all]
 		[clojure.set :as set]
